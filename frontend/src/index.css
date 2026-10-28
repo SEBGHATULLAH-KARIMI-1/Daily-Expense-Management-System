@@ -1,0 +1,28 @@
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/vazirmatn';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html[lang='fa'] body {
+  font-family: 'Vazirmatn Variable', 'Inter Variable', system-ui, sans-serif;
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}
