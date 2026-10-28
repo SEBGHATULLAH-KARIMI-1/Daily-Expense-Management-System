@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Trash } from './Icons'
 
-export default function CategoryManager({ categories, expenses, onAdd, onDelete }) {
+export default function CategoryManager({ categories, expenses, canDelete, onAdd, onDelete }) {
   const [name, setName] = useState('')
 
   const add = (e) => {
@@ -26,15 +26,17 @@ export default function CategoryManager({ categories, expenses, onAdd, onDelete 
             <i style={{ background: c.color }} />
             <span className="grow">{c.name}</span>
             <small>{count(c.id)} مصرف</small>
-            <button
-              className="icon-btn danger"
-              disabled={count(c.id) > 0}
-              title={count(c.id) > 0 ? 'کتگوری مصرف دارد و حذف نمی‌شود' : 'حذف'}
-              aria-label={`حذف ${c.name}`}
-              onClick={() => onDelete(c.id)}
-            >
-              <Trash />
-            </button>
+            {canDelete && (
+              <button
+                className="icon-btn danger"
+                disabled={count(c.id) > 0}
+                title={count(c.id) > 0 ? 'کتگوری مصرف دارد و حذف نمی‌شود' : 'حذف'}
+                aria-label={`حذف ${c.name}`}
+                onClick={() => onDelete(c.id)}
+              >
+                <Trash />
+              </button>
+            )}
           </li>
         ))}
       </ul>

@@ -21,3 +21,6 @@ export const Close = (p) => <svg {...base} {...p}><path d="M18 6 6 18M6 6l12 12"
 export const Tag = (p) => <svg {...base} {...p}><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z" /><circle cx="7.5" cy="7.5" r="1.2" /></svg>
 export const User = (p) => <svg {...base} {...p}><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /></svg>
 export const Check = (p) => <svg {...base} {...p}><path d="m5 12 5 5L20 7" /></svg>
+export const Users = (p) => <svg {...base} {...p}><circle cx="9" cy="8" r="3.5" /><path d="M2 21a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 7M18 21a7 7 0 0 0-3-5.7" /></svg>
+export const Key = (p) => <svg {...base} {...p}><circle cx="8" cy="15" r="4" /><path d="m11 12 9-9M16 7l3 3" /></svg>
+export const LogOut = (p) => <svg {...base} {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>

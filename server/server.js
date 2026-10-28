@@ -3,11 +3,17 @@ import express from 'express'
 import cors from 'cors'
 import { query } from './db.js'
 import { ensureSchema } from './migrate.js'
+import { requireAuth, requireAdmin } from './auth.js'
+import auth from './routes/auth.js'
+import users from './routes/users.js'
 import categories from './routes/categories.js'
 import expenses from './routes/expenses.js'
 
 const app = express()
 const PORT = process.env.PORT || 5000
+
+// پشت پروکسی Render، IP واقعی کاربر را درست بخوانیم (برای محدودیت تلاش ورود)
+app.set('trust proxy', 1)
 
 // آدرس سایت فرانت‌اند (Netlify). چند آدرس را با کاما جدا کنید. اگر خالی باشد همه مجازند (فقط برای توسعه).
 const origins = (process.env.CLIENT_URL || '')
@@ -27,8 +33,10 @@ app.get('/api/health', async (req, res) => {
   }
 })
 
-app.use('/api/categories', categories)
-app.use('/api/expenses', expenses)
+app.use('/api/auth', auth)
+app.use('/api/users', requireAuth, requireAdmin, users)
+app.use('/api/categories', requireAuth, categories)
+app.use('/api/expenses', requireAuth, expenses)
 
 // مدیریت خطاهای پیش‌بینی‌نشده
 app.use((err, req, res, next) => {
@@ -39,6 +47,6 @@ app.use((err, req, res, next) => {
 ensureSchema()
   .then(() => app.listen(PORT, () => console.log(`Server running on port ${PORT}`)))
   .catch((err) => {
-    console.error('✘ اتصال به دیتابیس ناموفق بود:', err.message)
+    console.error('✘ راه‌اندازی ناموفق بود:', err.message)
     process.exit(1)
   })

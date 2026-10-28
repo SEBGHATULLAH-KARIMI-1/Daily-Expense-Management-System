@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { query } from '../db.js'
 import { wrap, isUuid } from '../utils.js'
+import { requireAdmin } from '../auth.js'
 
 const router = Router()
 
@@ -31,7 +32,8 @@ router.post('/', wrap(async (req, res) => {
   res.status(201).json(rows[0])
 }))
 
-router.delete('/:id', wrap(async (req, res) => {
+// حذف کتگوری فقط برای مدیر
+router.delete('/:id', requireAdmin, wrap(async (req, res) => {
   if (!isUuid(req.params.id)) return res.status(400).json({ error: 'شناسه نامعتبر است' })
 
   const { rows } = await query('SELECT COUNT(*)::int AS n FROM expenses WHERE category_id = $1', [req.params.id])
