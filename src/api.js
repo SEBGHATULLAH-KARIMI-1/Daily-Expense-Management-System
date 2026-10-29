@@ -36,14 +36,14 @@ async function request(path, options = {}) {
 }
 
 export const api = {
+  register: (data) => request('/auth/register', { method: 'POST', body: data }),
   login: (username, password) => request('/auth/login', { method: 'POST', body: { username, password } }),
   me: () => request('/auth/me'),
   changePassword: (currentPassword, newPassword) =>
     request('/auth/change-password', { method: 'POST', body: { currentPassword, newPassword } }),
 
   getUsers: () => request('/users'),
-  addUser: (data) => request('/users', { method: 'POST', body: data }),
-  updateUser: (id, data) => request(`/users/${id}`, { method: 'PUT', body: data }),
+  resetUserPassword: (id, password) => request(`/users/${id}`, { method: 'PUT', body: { password } }),
   deleteUser: (id) => request(`/users/${id}`, { method: 'DELETE' }),
 
   getCategories: () => request('/categories'),

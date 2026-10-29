@@ -16,19 +16,22 @@ const DEFAULT_CATEGORIES = [
   ['متفرقه', '#64748b'],
 ]
 
-// جدول‌ها، کتگوری‌های پیش‌فرض و اولین مدیر را می‌سازد. اجرای چندباره بی‌خطر است.
+// کتگوری‌های پیش‌فرض برای یک کاربر تازه
+export async function seedCategories(userId) {
+  for (const [name, color] of DEFAULT_CATEGORIES) {
+    await query(
+      'INSERT INTO categories (user_id, name, color) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING',
+      [userId, name, color]
+    )
+  }
+}
+
+// جدول‌ها و اولین مدیر را می‌سازد و داده‌های قدیمی (نسخهٔ مشترک) را به مدیر نسبت می‌دهد.
+// اجرای چندباره بی‌خطر است.
 export async function ensureSchema() {
   await query(fs.readFileSync(path.join(__dirname, 'schema.sql'), 'utf8'))
 
-  const cats = await query('SELECT COUNT(*)::int AS n FROM categories')
-  if (cats.rows[0].n === 0) {
-    for (const [name, color] of DEFAULT_CATEGORIES) {
-      await query('INSERT INTO categories (name, color) VALUES ($1, $2)', [name, color])
-    }
-    console.log('✔ کتگوری‌های پیش‌فرض اضافه شدند')
-  }
-
-  // اولین مدیر: فقط وقتی هیچ کاربری وجود ندارد، از متغیرهای ADMIN_USERNAME و ADMIN_PASSWORD ساخته می‌شود
+  // اولین مدیر: فقط وقتی هیچ کاربری وجود ندارد، از ADMIN_USERNAME و ADMIN_PASSWORD ساخته می‌شود
   const users = await query('SELECT COUNT(*)::int AS n FROM users')
   if (users.rows[0].n === 0) {
     const { ADMIN_USERNAME, ADMIN_PASSWORD } = process.env
@@ -42,4 +45,29 @@ export async function ensureSchema() {
     )
     console.log(`✔ کاربر مدیر "${ADMIN_USERNAME}" ساخته شد`)
   }
+
+  // داده‌های قدیمی بدون صاحب → مدیر
+  const admin = (await query(`SELECT id FROM users WHERE role = 'admin' ORDER BY created_at LIMIT 1`)).rows[0]
+  if (admin) {
+    await query('UPDATE categories SET user_id = $1 WHERE user_id IS NULL', [admin.id])
+    await query('UPDATE expenses SET created_by = $1 WHERE created_by IS NULL', [admin.id])
+
+    const own = await query('SELECT COUNT(*)::int AS n FROM categories WHERE user_id = $1', [admin.id])
+    if (own.rows[0].n === 0) await seedCategories(admin.id)
+  }
+
+  // اگر مصرفی به کتگوری کاربر دیگری وصل است، برای صاحب مصرف یک کپی از کتگوری بساز و وصل کن
+  await query(`
+    INSERT INTO categories (user_id, name, color)
+    SELECT DISTINCT e.created_by, c.name, c.color
+    FROM expenses e JOIN categories c ON c.id = e.category_id
+    WHERE c.user_id <> e.created_by
+    ON CONFLICT (user_id, (lower(name))) DO NOTHING
+  `)
+  await query(`
+    UPDATE expenses e SET category_id = c2.id
+    FROM categories c1, categories c2
+    WHERE e.category_id = c1.id AND c1.user_id <> e.created_by
+      AND c2.user_id = e.created_by AND lower(c2.name) = lower(c1.name)
+  `)
 }

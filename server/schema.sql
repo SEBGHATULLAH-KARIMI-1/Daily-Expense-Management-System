@@ -10,14 +10,18 @@ CREATE TABLE IF NOT EXISTS users (
 -- نام کاربری بدون حساسیت به حروف یکتا باشد
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique ON users (lower(username));
 
+-- هر کاربر کتگوری‌های مخصوص خودش را دارد
 CREATE TABLE IF NOT EXISTS categories (
-  id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name  TEXT NOT NULL,
-  color TEXT NOT NULL
+  id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  name    TEXT NOT NULL,
+  color   TEXT NOT NULL
 );
 
--- نام کتگوری بدون حساسیت به حروف یکتا باشد
-CREATE UNIQUE INDEX IF NOT EXISTS categories_name_unique ON categories (lower(name));
+-- برای دیتابیس‌های قدیمی (نسخهٔ مشترک)
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE CASCADE;
+DROP INDEX IF EXISTS categories_name_unique;
+CREATE UNIQUE INDEX IF NOT EXISTS categories_user_name_unique ON categories (user_id, lower(name));
 
 CREATE TABLE IF NOT EXISTS expenses (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,8 +34,19 @@ CREATE TABLE IF NOT EXISTS expenses (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- چه کسی این مصرف را ثبت کرده (برای دیتابیس‌های قدیمی هم اضافه می‌شود)
-ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE SET NULL;
+-- صاحب مصرف
+ALTER TABLE expenses ADD COLUMN IF NOT EXISTS created_by UUID REFERENCES users(id) ON DELETE CASCADE;
+
+-- اگر قبلاً با SET NULL ساخته شده بود، به CASCADE تغییر بده
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'expenses_created_by_fkey' AND confdeltype <> 'c') THEN
+    ALTER TABLE expenses DROP CONSTRAINT expenses_created_by_fkey;
+    ALTER TABLE expenses ADD CONSTRAINT expenses_created_by_fkey
+      FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses (date);
 CREATE INDEX IF NOT EXISTS idx_expenses_category ON expenses (category_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_owner ON expenses (created_by);

@@ -3,10 +3,11 @@ import bcrypt from 'bcryptjs'
 import { query } from '../db.js'
 import { wrap } from '../utils.js'
 import { requireAuth, signToken, publicUser } from '../auth.js'
+import { seedCategories } from '../migrate.js'
 
 const router = Router()
 
-// محدودیت ساده برای حدس زدن رمز: ۱۰ تلاش ناموفق در ۱۵ دقیقه برای هر IP
+// محدودیت ساده: ۱۰ تلاش ناموفق ورود در ۱۵ دقیقه برای هر IP
 const attempts = new Map()
 const WINDOW = 15 * 60 * 1000
 const MAX = 10
@@ -20,7 +21,51 @@ const recordFail = (ip) => {
   else a.count += 1
 }
 
+// محدودیت ثبت‌نام: حداکثر ۱۰ حساب جدید در ساعت برای هر IP (جلوگیری از اسپم)
+const signups = new Map()
+const SIGNUP_WINDOW = 60 * 60 * 1000
+const SIGNUP_MAX = 10
+const signupLimited = (ip) => {
+  const s = signups.get(ip)
+  return !!s && s.reset > Date.now() && s.count >= SIGNUP_MAX
+}
+const recordSignup = (ip) => {
+  const s = signups.get(ip)
+  if (!s || s.reset < Date.now()) signups.set(ip, { count: 1, reset: Date.now() + SIGNUP_WINDOW })
+  else s.count += 1
+}
+
 const DUMMY_HASH = bcrypt.hashSync('dummy-password', 10)
+
+// ثبت‌نام آزاد: هر کس برای خودش حساب می‌سازد و فوراً وارد می‌شود
+router.post('/register', wrap(async (req, res) => {
+  const ip = req.ip
+  if (signupLimited(ip)) return res.status(429).json({ error: 'تعداد ثبت‌نام‌ها زیاد است. کمی بعد دوباره امتحان کنید' })
+
+  const name = (req.body.name || '').trim()
+  const username = (req.body.username || '').trim()
+  const password = req.body.password || ''
+
+  if (!name) return res.status(400).json({ error: 'نام خود را بنویسید' })
+  if (!/^[A-Za-z0-9_.-]{3,30}$/.test(username))
+    return res.status(400).json({ error: 'نام کاربری باید ۳ تا ۳۰ حرف انگلیسی، عدد یا _ . - باشد' })
+  if (password.length < 6) return res.status(400).json({ error: 'رمز عبور باید حداقل ۶ حرف باشد' })
+
+  try {
+    const hash = await bcrypt.hash(password, 10)
+    const { rows } = await query(
+      `INSERT INTO users (username, name, password_hash, role) VALUES ($1, $2, $3, 'user')
+       RETURNING id, username, name, role`,
+      [username, name, hash]
+    )
+    await seedCategories(rows[0].id)
+    recordSignup(ip)
+    res.status(201).json({ token: signToken(rows[0]), user: publicUser(rows[0]) })
+  } catch (e) {
+    if (e.code === '23505') return res.status(409).json({ error: 'این نام کاربری قبلاً استفاده شده است' })
+    throw e
+  }
+}))
 
 router.post('/login', wrap(async (req, res) => {
   const ip = req.ip

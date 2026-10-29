@@ -39,7 +39,7 @@ export default function TopBar({ user, onUsers, onPassword, onLogout }) {
               <small>{user.role === 'admin' ? 'مدیر' : 'کاربر'} · {user.username}</small>
             </div>
             {user.role === 'admin' && (
-              <button role="menuitem" onClick={pick(onUsers)}><Users /> مدیریت کاربران</button>
+              <button role="menuitem" onClick={pick(onUsers)}><Users /> کاربران سامانه</button>
             )}
             <button role="menuitem" onClick={pick(onPassword)}><Key /> تغییر رمز عبور</button>
             <button role="menuitem" className="danger" onClick={pick(onLogout)}><LogOut /> خروج</button>

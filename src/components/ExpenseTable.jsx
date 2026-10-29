@@ -3,7 +3,7 @@ import { Search, Edit, Trash, Download, User, Close, Plus } from './Icons'
 
 export default function ExpenseTable({
   expenses, getCategory, search, onSearch, catFilter, onClearCat,
-  canEdit, onEdit, onDelete, onPrint, onAdd,
+  onEdit, onDelete, onPrint, onAdd,
 }) {
   // گروه‌بندی بر اساس روز (لیست از قبل از جدید به قدیم مرتب است)
   const groups = []
@@ -65,18 +65,13 @@ export default function ExpenseTable({
                       <div className="entry-meta">
                         <span className="tag">{cat.name}</span>
                         {e.takenBy && <span className="who"><User width={14} height={14} />{e.takenBy}</span>}
-                        {e.createdByName && <span className="by">ثبت: {e.createdByName}</span>}
                         {e.note && <span className="entry-note" title={e.note}>{e.note}</span>}
                       </div>
                     </div>
                     <div className="entry-amount">{num(e.amount)}<small>{CURRENCY}</small></div>
                     <div className="entry-actions">
-                      {canEdit(e) && (
-                        <>
-                          <button className="icon-btn" onClick={() => onEdit(e)} aria-label="ویرایش"><Edit /></button>
-                          <button className="icon-btn danger" onClick={() => onDelete(e.id)} aria-label="حذف"><Trash /></button>
-                        </>
-                      )}
+                      <button className="icon-btn" onClick={() => onEdit(e)} aria-label="ویرایش"><Edit /></button>
+                      <button className="icon-btn danger" onClick={() => onDelete(e.id)} aria-label="حذف"><Trash /></button>
                     </div>
                   </li>
                 )

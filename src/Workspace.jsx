@@ -47,7 +47,6 @@ export default function Workspace({ user, onLogout }) {
   }, [toast])
 
   const getCategory = useCallback((id) => categories.find((c) => c.id === id) || FALLBACK, [categories])
-  const canEdit = (e) => isAdmin || e.createdById === user.id
 
   const run = async (fn) => {
     try { setError(''); return await fn() } catch (e) { setError(e.message); throw e }
@@ -158,7 +157,6 @@ export default function Workspace({ user, onLogout }) {
                 onSearch={setSearch}
                 catFilter={catFilter}
                 onClearCat={() => setCatFilter('all')}
-                canEdit={canEdit}
                 onEdit={openEdit}
                 onDelete={deleteExpense}
                 onPrint={() => window.print()}
@@ -190,7 +188,7 @@ export default function Workspace({ user, onLogout }) {
             <CategoryManager
               categories={categories}
               expenses={expenses}
-              canDelete={isAdmin}
+              canDelete
               onAdd={(name) => addCategory(name).catch(() => {})}
               onDelete={deleteCategory}
             />
@@ -198,7 +196,7 @@ export default function Workspace({ user, onLogout }) {
         )}
 
         {usersOpen && isAdmin && (
-          <Modal title="مدیریت کاربران" onClose={closeUsers}>
+          <Modal title="کاربران سامانه" onClose={closeUsers} wide>
             <UserManager currentUser={user} />
           </Modal>
         )}
